@@ -1,2 +1,3 @@
 # final_projects
-Organizational start point for course project repositories
+Topic
+Monte Carlo simulation on price discrimination
