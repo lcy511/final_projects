@@ -2,6 +2,8 @@ from collections import Counter, defaultdict
 from random import choice, random, sample
 import numpy as np
 import math
+import pandas as pd
+import matplotlib.pyplot as plt
 
 #retailer1: no price discrination
 #retailer2: price discrination based on accumulative consumption amount
@@ -326,12 +328,70 @@ def purchase_decision(customer:list, retailer:list, product:Products, popularity
             #profit = sum(dis_product[purchase==1]-product[purchase==1]*(1-store.profit_rate))
     return [s.profit for s in retailer]
 
-def simulation(customer:list, retailer:list, price:np.array, popularity:np.array, times:int, span=365):
-    # 每次开始前要清空前一年的数据
-    #profit = defaultdict(Counter)
+def reset(data:list):
+    for obj in data:
+        obj.reset()
 
-    for i in range(span):
-        day_profit = purchase_decision(customer, retailer, Products.all_price, Products.all_popularity)
+def simulation(customer:list, retailer:list, price:np.array, popularity:np.array, times:int, span=365, image=False):
+    """
+
+    :param customer:
+    :param retailer:
+    :param price:
+    :param popularity:
+    :param times:
+    :param span:
+    :return:
+    >>> c1 = Customers(1000,1,(0.5,0.5))
+    >>> c2 = Customers(1000,5,(0.7,0.2))
+    >>> r1=Retailers()
+    >>> r2=Retailers(strategy=(0,1,0.2,0))
+    >>> r3=Retailers(strategy=(0,0.5,0.25,1))
+    >>> p1=Products(50,20,0.5,0.2,100)
+    >>> simulation([c1,c2], [r1,r2,r3], p1.price, p1.popularity,10,10,True) # doctest: +ELLIPSIS
+    Retailer4   : No price discrimination
+    Earn...
+    Rank No.1 for...
+    ...
+    Retailer6   : Random Price discrimination
+    ...
+    Rank No.3 for...
+
+    """
+
+    record = {}
+    rank = {}
+    for n in range(times):
+        reset(customer)
+        reset(retailer)
+        profit_record = {}
+        for day in range(1,span+1):
+            total_profit = purchase_decision(customer, retailer, price, popularity)
+            profit_record[day] = total_profit
+        record[n+1] = total_profit
+        rank[n+1] = list(pd.Series(total_profit).rank(method='first',ascending=False))
+
+        if image:
+            profit_record = pd.DataFrame(profit_record, index=[s.name for s in retailer]).T
+            profit_record.plot(figsize=(9,6)).set(xlabel='Day', ylabel='Accumulated Profit')
+            # reference: https://stackoverflow.com/questions/45376232/how-to-save-image-created-with-pandas-dataframe-plot/45379210
+            plt.savefig("D:/final_projects/plots/time{:}.png".format(n+1))
+
+    record = pd.DataFrame(record,index=[s.name for s in retailer]).T
+    rank = pd.DataFrame(rank, index=[s.name for s in retailer]).T
+
+    if image:
+        record.plot(figsize=(9,6)).set(xlabel='Simulation Times', ylabel='Profit')
+        plt.savefig("D:/final_projects/plots/summary_{:}times.png".format(times))
+
+    total = len(retailer)
+    for i in range(total):
+        print("{:<12}: {:}\nEarn {:.2f} on average in {:} days".format(retailer[i].name, retailer[i].type, record[retailer[i].name].mean(),span))
+        #print(strategy and type)
+        for j in range(total):
+            ranking_number = Counter(rank[retailer[i].name])[j+1]
+            percentage = ranking_number/times
+            print("Rank No.{:} for {:^5.2f} times, rate: {:^6.2%}".format(j+1, ranking_number,percentage))
 
 
 
