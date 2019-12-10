@@ -28,7 +28,8 @@ def purchase_will(original_price, discount_price:np.array, sensitivity:int) -> n
     True
     """
     discount = (original_price-discount_price)/original_price
-    probability = math.exp(sensitivity/100)*(1+discount)*0.3
+    #probability = math.exp(sensitivity/100)*(1+discount)*0.3
+    probability = np.exp(1+sensitivity/10 *discount) / 2 * 0.3
     return probability
 
 class Customers:
@@ -357,6 +358,8 @@ def simulation(customer:list, retailer:list, price:np.array, popularity:np.array
     ...
     Rank No.3 for...
 
+    >>> #simulation([c1,c2], [r1,r2,r3], p1.price, p1.popularity,10,10,True)
+
     """
 
     record = {}
@@ -371,11 +374,11 @@ def simulation(customer:list, retailer:list, price:np.array, popularity:np.array
         record[n+1] = total_profit
         rank[n+1] = list(pd.Series(total_profit).rank(method='first',ascending=False))
 
-        if image:
-            profit_record = pd.DataFrame(profit_record, index=[s.name for s in retailer]).T
-            profit_record.plot(figsize=(9,6)).set(xlabel='Day', ylabel='Accumulated Profit')
+        #if image:
+            #profit_record = pd.DataFrame(profit_record, index=[s.name for s in retailer]).T
+            #profit_record.plot(figsize=(9,6)).set(xlabel='Day', ylabel='Accumulated Profit')
             # reference: https://stackoverflow.com/questions/45376232/how-to-save-image-created-with-pandas-dataframe-plot/45379210
-            plt.savefig("D:/final_projects/plots/time{:}.png".format(n+1))
+            #plt.savefig("D:/final_projects/plots/time{:}.png".format(n+1))
 
     record = pd.DataFrame(record,index=[s.name for s in retailer]).T
     rank = pd.DataFrame(rank, index=[s.name for s in retailer]).T
@@ -391,7 +394,22 @@ def simulation(customer:list, retailer:list, price:np.array, popularity:np.array
         for j in range(total):
             ranking_number = Counter(rank[retailer[i].name])[j+1]
             percentage = ranking_number/times
-            print("Rank No.{:} for {:^5.2f} times, rate: {:^6.2%}".format(j+1, ranking_number,percentage))
+            print("Rank No.{:} for {:^5} times, rate: {:^6.2%}".format(j+1, ranking_number,percentage))
+
+if __name__ == '__main__':
+    c1 = Customers(1000, 5, (0.5, 0.5))
+    c2 = Customers(500, 3, (0.7, 0.2))
+    c3 = Customers(100, 8, (0.3, 0.8))
+
+    r1 = Retailers()
+    r2 = Retailers(strategy=(0, 1, 0.2, 0))
+    r3 = Retailers(strategy=(0, 0.5, 0.4, 1))
+    #r2 = Retailers()
+    #r3 = Retailers()
+    p1 = Products(50, 20, 5, 1, 100)
+    p2 = Products(200, 60, 5, 2, 200)
+    simulation(Customers.all_customer, Retailers.all_store, Products.all_price, Products.all_popularity, 100, 100, True)
+
 
 
 
