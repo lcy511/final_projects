@@ -9,13 +9,13 @@ import matplotlib.pyplot as plt
 #retailer2: price discrination based on accumulative consumption amount
 #retailer3: random price discrimation
 
-def purchase_will(original_price, discount_price:np.array, sensitivity:int) -> np.array:
+def purchase_will(original_price:np.array, discount_price:np.array, sensitivity:int) -> np.array:
     """
-
-    :param original_price:
-    :param discount_price:
-    :param sensitivity:
-    :return:
+    Calculate people's  willing to pay when they meet a discount
+    :param original_price: the standard price without any knid of discount
+    :param discount_price: the discount price which must match with the original price
+    :param sensitivity: price sensitivity level, the larger the number is, the more sensitive to price customers are
+    :return: the probability of making a purchase for each product
 
     >>> p1=Products(50,20,0.5,0.2,10000)
     >>> price = p1.price
@@ -26,17 +26,34 @@ def purchase_will(original_price, discount_price:np.array, sensitivity:int) -> n
     True
     >>> np.all(a<c)
     True
+    >>> purchase_will(np.array(range(3)), np.array(range(2)),1)
+    Traceback (most recent call last):
+    ValueError: The array of original price and the array of discount price must have the same dimension.
     """
+    if original_price.shape != discount_price.shape:
+        raise ValueError("The array of original price and the array of discount price must have the same dimension.")
     discount = (original_price-discount_price)/original_price
     #probability = math.exp(sensitivity/100)*(1+discount)*0.3
     probability = np.exp(1+sensitivity/10 *discount) / 2 * 0.3
     return probability
 
 class Customers:
+    """
+    A group of customers
+    """
     total_amount = 0
     count = 0
     all_customer = []
-    def __init__(self, amount, sensitivity, preference, name=None, record=None):
+    def __init__(self, amount:int, sensitivity:int, preference:tuple, name=None, record=None):
+        """
+        :param amount: how many customers in this group
+        :param sensitivity: price sensitivity level
+        :param preference: a tuple with 2 numbers between 0 and 1, respectively representing the propotion of customers\
+                            who prefer the store they cunsume most and the proportation of customers who prefer to
+                            compare the price in all retailers
+        :param name: name of the object
+        :param record: customers' previous record about accumulated consumption amount in each retailer
+        """
         Customers.total_amount += amount
         Customers.count += 1
         Customers.all_customer.append(self)
@@ -47,22 +64,24 @@ class Customers:
         self.amount = amount
         self.sensitivity = int(sensitivity)
         self.original_preference = preference
+        self.original_record = record
         self.get_preference(preference)
         self.get_record(record)
         #self.record = defaultdict(float) # record purchase amount
 
     def reset(self):
-        self.get_preference(self.original_preference)
-
-
-    def get_preference(self,preference:tuple): #be same in a span
         """
-        Based on the probability of customers' preference,redord the perference of each single customer,
-        including if one prefers a familiar retailer and if one always compares the price of the product that he decide
-        to buy with the price of same product in other retailers
-        :param preference: the first element represents the probability of always visiting the familiar retailer at first,
-                           the secend element represents the probability of making an comparison among different retailers
-        :return:
+        clear all the record in self.eachcustomer
+
+        """
+        self.get_preference(self.original_preference)
+        self.get_record(self.original_record)
+
+
+    def get_preference(self,preference:tuple):
+        """
+        Based on the probability of customers' preference,redord the perference and cunsumption history of each customer
+
         """
 
         self.eachcustomer = defaultdict(dict)
@@ -84,50 +103,84 @@ class Customers:
                 self.eachcustomer[ID]['comparison'] = 0
 
     def get_record(self,d:dict):
+        """
+        If the customers have previous purchasing history, add them into their current record
+        :param d: record about the retailer and consumption amount
+        """
         if d is not None:
             for key in d.keys():
                 for cus in self.eachcustomer.keys():
                     self.eachcustomer[cus]['purchase_amount'][key]=d[key]
 
     def customer_shop(self) -> list: #change every day
-        visits = int(choice(np.random.triangular(0.05 * self.amount, 0.2 * self.amount, 0.5 * self.amount, 3650)))
+        """
+        random select person to shop in the store based on traingular distribution
+        :return: list of customer's ID
+        """
+        # the size could be larger if the code efficiency is improved
+        visits = int(choice(np.random.triangular(0.05 * self.amount, 0.2 * self.amount, 0.5 * self.amount, 365)))
         visitors = sample(self.eachcustomer.keys(), visits)
         return visitors
 
-    def store_to_shop(self, customer:str, retailer:list):
+    def store_to_shop(self, customer:str, retailer:list) :
+        """
+        Decide which store the customer will shop in
+        :param customer: customers selected to shop today
+        :param retailer: all the retailers
+        :return: an object from Retailers class
+        """
+        # whether the customer first go to the store with highest consumption record
         if self.eachcustomer[customer]['record_first'] == 1 and len(self.eachcustomer[customer]['purchase_amount']) > 0:
             most = max(self.eachcustomer[customer]['purchase_amount'],
                         key=self.eachcustomer[customer]['purchase_amount'].get)
             i = 0
+            # if the selected store is a current retailer
             while i<len(retailer):
                 if retailer[i].name == most:
                     store = retailer[i]
                     break
                 i += 1
                 store = choice(retailer)
+        # select a store randomly
         else:
             store = choice(retailer)
-        return store #Retailers
+        return store # Retailers
 
     def product_visited(self, product:np.array, popularity:np.array) ->np.array:
-        amount = len(product)
+        """
+        Randomly select products the customer will view based on their popularity
+        """
+        amount = len(product) # total amount of products
+        # amount of products being viewed
         n = math.ceil(choice(np.random.triangular(0.0001 * amount, 0.001 * amount,
-                                                   0.01 * amount, 3650)))
+                                                   0.01 * amount, 365)))
         p_visited = np.random.choice(product, n, replace=False, p=popularity)  #array
         return p_visited
-#####
+
     def real_price(self, customer:str, price:np.array, store) ->np.array:
-        a, p, d, r = store.strategy
+        """
+        Get the discount price of the given products in the given retailers
+        :param customer: list of IDs of customers
+        :param price: price of each product
+        :param store: class Retailer object
+        :return:
+        """
+        # get price strategy
+        a, p, d, r = store.strategy #threshold amount, proportation, discount, randomness
         dis_price = price
         if self.eachcustomer[customer]['purchase_amount'][store.name] >= a:
             if random() <= p:
-                if r == 0:
+                if r == 0: # fixed discount rate
                     dis_price = price * (1 - d)
-                else:
+                else: # random discount
                     dis_price = price * (1 - np.random.uniform(0, d, len(price)))
         return dis_price
 
     def compare_retailer(self, customer:str, product:np.array, retailer:list)->np.array:
+        """
+        Compare the products' price in every given retailer and choose the cheapest one respectively
+        :return: the best price of each product and which retailer it belongs to
+        """
         best_price = product
         best_store = np.array([choice(retailer)]*len(product))
         for store in retailer:
@@ -138,48 +191,27 @@ class Customers:
         return best_price, best_store
 
 
-
-
-    """
-    def purchase_decision(self):
-        profit = defaultdict()
-        visitor = self.customer_shop()
-        for cus in visitor:
-            store = self.store_to_shop(cus,Retailers.all_store)
-            price = self.product_visited()
-            store = np.array([store]*len(price))
-            dis_price = self.real_price(cus,price,store[0])
-            if self.each_customer[cus]['comparison'] == 1:
-                store, dis_price = self.compare_retailer(cus,price,Retailers.all_store)
-            
-            #A, P, D, R = store.strategy          
-            #dis_product = product
-            #if self.each_customer[cus][store.name] >= A:
-                #if random() <= P:
-                    #if R == 0:
-                        #dis_product = product * (1-D)
-                    #else:
-                        #dis_product = product * (1-random.uniform(0,D))
-             
-            probability = purchase_will(price,dis_price,self.sensitivity) #modify later
-            random_array = np.random.random_sample(len(price))
-            purchase = np.where(random_array<probability,1,0)
-            for s in Retailers.all_store:
-                self.each_customer[cus][s.name] += sum(dis_price[(purchase==1) * (store==s.name)==True])
-                self.record[cus][s.name] += sum(purchase[store==s.name])
-                profit[s.name] = sum(dis_price[(purchase==1) * (store==s.name)==True]-
-                                     price[(purchase==1) * (store==s.name)==True]*(1-s.profit_rate))
-            #self.each_customer[cus][store.name] += sum(dis_product[purchase==1])
-            #self.record[cus][store.name] += sum(purchase)
-            #profit = sum(dis_product[purchase==1]-product[purchase==1]*(1-store.profit_rate))
-            return profit
-"""
-
 class Products:
+    """
+    A group of products.
+    The standard price of all products follows the normal distribution
+    The popularity of all products also follows the normal distribution
+    The profit rate of all products are same.
+    However, to simplify the simulation, I set a profit rate for each retailer,instead of setting a profit rate for\
+    each group of product. If the code efficiency could be improved a lot, I should
+    set the products' profit rate and even arrange a distribution pattern for it.
+    """
     all_price = np.array([])
     all_popularity = np.array([])
     all_amount = 0
-    def __init__(self, price_mean, price_sd, popu_mean, popu_sd, amount):
+    def __init__(self, price_mean:float, price_sd:float, popu_mean:float, popu_sd:float, amount:int):
+        """
+        :param price_mean: mean of normal distribution about product
+        :param price_sd: standard deviation of normal distribution about product
+        :param popu_mean: mean of normal distribution about popularity
+        :param popu_sd: standard deviation of normal distribution about popularity
+        :param amount: how many kinds of product in this groups
+        """
         self.mean = price_mean
         self.sd = price_sd
         self.amount = amount
@@ -190,8 +222,10 @@ class Products:
         Products.all_popularity = Products.all_popularity/sum(Products.all_popularity)
         Products.all_amount += self.amount
 
-
     def get_price(self):
+        """
+        Calculate the price for each kind of product
+        """
         product = np.zeros(1)
         n = self.amount
         while len(product) < self.amount:
@@ -201,6 +235,9 @@ class Products:
         self.price = np.random.choice(product, self.amount, replace=False)
 
     def get_popularity(self, mean, sd):
+        """
+        Calculate the popularity for each kind of product
+        """
         popularity = np.zeros(1)
         n = self.amount
         while len(popularity) < self.amount:
@@ -212,9 +249,19 @@ class Products:
 
 
 class Retailers:
+    """
+    Every retailer sell the same products with the same cost
+    Every retailer must select a price strategy
+    """
     count = 0
     all_store = []
     def __init__(self, name=None, profit_rate=0.4, strategy=None):
+        """
+        :param name: retailer's name
+        :param profit_rate: a fixed profit rate for every product it sell
+        :param strategy: a tuple of price discrimination strategy, including threshold amount, the proportion of customers\
+                receiving discount, the discount, and the randomness of discount
+        """
         Retailers.count += 1
         Retailers.all_store.append(self)
         # retailer's name
@@ -235,7 +282,7 @@ class Retailers:
 
         self.profit_rate = profit_rate
         self.profit = 0 # reset later
-        self.rank=defaultdict(Counter)
+        #self.rank=defaultdict(Counter)
 
     def get_strategy(self, t:tuple):
         if t is None:
@@ -248,18 +295,18 @@ class Retailers:
 
     def reset(self):
         self.profit = 0
-        self.rank = defaultdict(Counter)
+        #self.rank = defaultdict(Counter)
 
-def purchase_decision(customer:list, retailer:list, product:Products, popularity:np.array):
+def purchase_decision(customer:list, retailer:list, product:np.array, popularity:np.array) -> list:
     """
     Simulate purchase process in one day.Given the parameters, some customers will be selected randomly to shop in the
     randomly selected stores, and they will also view some products that are also selected randomly based on their popularity.
     During the process, whether they would buy the product are dependent on the price and their price sensitivity.
-    :param customer:
-    :param retailer:
-    :param product:
-    :param popularity:
-    :return:
+    :param customer: a list of objects in class Customers
+    :param retailer: a list of objects in class Retailers
+    :param product: an array of priducts' price
+    :param popularity: an array of priducts' popularity
+    :return: a list containing profit of each retailer
 
     >>> c1 = Customers(1000,1,(0.5,0.5))
     >>> c2 = Customers(1000,5,(0.7,0.2))
@@ -330,18 +377,25 @@ def purchase_decision(customer:list, retailer:list, product:Products, popularity
     return [s.profit for s in retailer]
 
 def reset(data:list):
+    """
+    carry out the reset method
+    :param data: list containing objects
+    """
     for obj in data:
         obj.reset()
 
 def simulation(customer:list, retailer:list, price:np.array, popularity:np.array, times:int, span=365, image=False):
     """
+    During a given period, simulate the profit of each retailer, based on the given customers and products
+    Repeat the simulation for many times
 
-    :param customer:
-    :param retailer:
-    :param price:
-    :param popularity:
-    :param times:
-    :param span:
+    :param customer: a list of objects in class Customers
+    :param retailer: a list of objects in class Retailers
+    :param price: an array of priducts' price
+    :param popularity: an array of priducts' popularity
+    :param times: the number of simulations
+    :param span: how many days you want to simulate in each simulation
+    :param image: if save the image about profit curve for each retailer
     :return:
     >>> c1 = Customers(1000,1,(0.5,0.5))
     >>> c2 = Customers(1000,5,(0.7,0.2))
@@ -358,7 +412,6 @@ def simulation(customer:list, retailer:list, price:np.array, popularity:np.array
     ...
     Rank No.3 for...
 
-    >>> #simulation([c1,c2], [r1,r2,r3], p1.price, p1.popularity,10,10,True)
 
     """
 
@@ -374,7 +427,7 @@ def simulation(customer:list, retailer:list, price:np.array, popularity:np.array
         record[n+1] = total_profit
         rank[n+1] = list(pd.Series(total_profit).rank(method='first',ascending=False))
 
-        #if image:
+        #if image: #image of every simulation
             #profit_record = pd.DataFrame(profit_record, index=[s.name for s in retailer]).T
             #profit_record.plot(figsize=(9,6)).set(xlabel='Day', ylabel='Accumulated Profit')
             # reference: https://stackoverflow.com/questions/45376232/how-to-save-image-created-with-pandas-dataframe-plot/45379210
@@ -383,7 +436,7 @@ def simulation(customer:list, retailer:list, price:np.array, popularity:np.array
     record = pd.DataFrame(record,index=[s.name for s in retailer]).T
     rank = pd.DataFrame(rank, index=[s.name for s in retailer]).T
 
-    if image:
+    if image: # image of the whole simulation
         record.plot(figsize=(9,6)).set(xlabel='Simulation Times', ylabel='Profit')
         plt.savefig("D:/final_projects/plots/summary_{:}times.png".format(times))
 
@@ -408,7 +461,7 @@ if __name__ == '__main__':
     #r3 = Retailers()
     p1 = Products(50, 20, 5, 1, 100)
     p2 = Products(200, 60, 5, 2, 200)
-    simulation(Customers.all_customer, Retailers.all_store, Products.all_price, Products.all_popularity, 100, 100, True)
+    simulation(Customers.all_customer, Retailers.all_store, Products.all_price, Products.all_popularity, 10, 100, True)
 
 
 
