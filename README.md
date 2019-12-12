@@ -55,6 +55,8 @@ compare product's price in all stores
 varies among customers and the relationship among discount, purchase willingness
 and sensitivity follow the formula: P=0.15*exp(1+discount*sensitivity/10)
 
+![image](https://raw.githubusercontent.com/lcy511/final_projects/master/images/price_sensitivity.png)
+
 # Simulation
 During a given period, simulate the profit of each retailer,based on the
 given customers and products, and repeat the simulation for many times.
