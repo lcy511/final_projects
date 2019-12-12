@@ -1,5 +1,5 @@
 # IS590PR Final Project
-#Topic
+# Topic
 
 Monte Carlo simulation on profit prediction based on price discrimination
 
@@ -58,6 +58,14 @@ and sensitivity follow the formula: P=0.15*exp(1+discount*sensitivity/10)
 # Simulation
 During a given period, simulate the profit of each retailer,based on the
 given customers and products, and repeat the simulation for many times.
+
+I simulated 3 scenarios.
+
+Scenario 1
+
+![image](https://raw.githubusercontent.com/lcy511/final_projects/master/images/Scenario1/describe.png)
+
+
 
 
 
