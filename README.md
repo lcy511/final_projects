@@ -93,7 +93,7 @@ Retailer 2 pulls up the threshold amount of conducting price discrimination stra
 
 Result 3
 
-![image](https://raw.githubusercontent.com/lcy511/final_projects/master/images/Scenario3/summary_100times.png)
+![image](https://raw.githubusercontent.com/lcy511/final_projects/master/images/Scenario3/summary_1000times.png)
 
 ![image](https://raw.githubusercontent.com/lcy511/final_projects/master/images/Scenario3/result.png)
 
