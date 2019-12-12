@@ -61,9 +61,49 @@ given customers and products, and repeat the simulation for many times.
 
 I simulated 3 scenarios.
 
-Scenario 1
+1. Scenario 1
+
+All retailers cuoduct no price discrimination strategy
 
 ![image](https://raw.githubusercontent.com/lcy511/final_projects/master/images/Scenario1/describe.png)
+
+Result 1
+
+![image](https://raw.githubusercontent.com/lcy511/final_projects/master/images/Scenario1/summary_100times.png)
+
+![image](https://raw.githubusercontent.com/lcy511/final_projects/master/images/Scenario1/result.png)
+
+2. Scenario 2
+
+Retailer 2 and retailer 3 conduct price discrimination strategy
+
+![image](https://raw.githubusercontent.com/lcy511/final_projects/master/images/Scenario2/describe.png)
+
+Result 2
+
+![image](https://raw.githubusercontent.com/lcy511/final_projects/master/images/Scenario2/summary_100times.png)
+
+![image](https://raw.githubusercontent.com/lcy511/final_projects/master/images/Scenario2/result.png)
+
+3. Scenario 3
+
+Retailer 2 pulls up the threshold amount of conducting price discrimination strategy
+
+![image](https://raw.githubusercontent.com/lcy511/final_projects/master/images/Scenario3/describe.png)
+
+Result 3
+
+![image](https://raw.githubusercontent.com/lcy511/final_projects/master/images/Scenario3/summary_100times.png)
+
+![image](https://raw.githubusercontent.com/lcy511/final_projects/master/images/Scenario3/result.png)
+
+# Conclusion
+Price discrimination could increase a retailer's profit, but whether it works depends on some factors and opponent's strategy is important one of them.
+
+
+
+
+
 
 
 
